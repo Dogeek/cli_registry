@@ -76,7 +76,6 @@ def authentication(
             'Key not in maintainers whitelist.'
         )
     message = request.url.path.encode('utf8')
-    print(request.url.path)
     if not check_auth(message, authorization, x_signature):
         raise HTTPException(
             HTTPStatus.FORBIDDEN,

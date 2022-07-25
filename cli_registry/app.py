@@ -4,6 +4,7 @@ from http import HTTPStatus
 import logging
 from logging.config import dictConfig
 import os
+from textwrap import shorten
 from typing import Optional
 
 from fastapi import FastAPI, Depends, Header, HTTPException
@@ -187,9 +188,8 @@ async def create_plugin_version(
     plugin: PluginOrm = Depends(deps.plugin),
 ):
     '''Publish a new version of the plugin to the registry.'''
-    logger.info(
-        'Creating a new plugin version for plugin %s (%s)',
-        plugin.name, version
+    print(
+        'Creating a new plugin version for plugin %s (%s)' % (plugin.name, version)
     )
     version_orm = PluginVersionOrm()
     version_orm.version = version
@@ -197,17 +197,17 @@ async def create_plugin_version(
     version_orm.upload_date = datetime.now()
     db.add(version_orm)
     db.commit()
-    logger.info('Plugin version created and committed successfully.')
+    print('Plugin version created and committed successfully.')
 
     plugin_path = BASE_PATH / f'{plugin.name}/'
-    logger.info('Saving version to path %s', plugin_path)
+    print('Saving version to path %s' % plugin_path)
     plugin_path.mkdir(parents=True, exist_ok=True)
-    logger.info('Making the directory if it does not exist...')
+    print('Making the directory if it does not exist...')
     with open(plugin_path / f'{version}.tar.gz', 'wb') as fp:
-        logger.info(
-            'Opened file pointer to %s and writing...',
-            str(plugin_path / f'{version}.tar.gz')
+        print(
+            'Opened file pointer to %s and writing...' % str(plugin_path / f'{version}.tar.gz')
         )
+        print('Raw data : %s' % shorten(data.tarball, 50))
         fp.write(b85decode(data.tarball))
     return JSONResponse({'status': 'ok'}, HTTPStatus.CREATED)
 
