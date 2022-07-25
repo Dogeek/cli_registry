@@ -1,6 +1,8 @@
 from base64 import b85decode
 from datetime import datetime
 from http import HTTPStatus
+import logging
+from logging.config import dictConfig
 import os
 from typing import Optional
 
@@ -16,7 +18,32 @@ from cli_registry.models.plugin import (
 from cli_registry import dependancies as deps
 
 
+log_config = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "default": {
+            "()": "uvicorn.logging.DefaultFormatter",
+            "fmt": "%(levelprefix)s %(asctime)s %(message)s",
+            "datefmt": "%Y-%m-%d %H:%M:%S",
+
+        },
+    },
+    "handlers": {
+        "default": {
+            "formatter": "default",
+            "class": "logging.StreamHandler",
+            "stream": "ext://sys.stderr",
+        },
+    },
+    "loggers": {
+        "foo-logger": {"handlers": ["default"], "level": "DEBUG"},
+    },
+}
+dictConfig(log_config)
+
 app = FastAPI()
+logger = logging.getLogger('cli_registry')
 
 
 @app.get('/v1/plugins')
@@ -160,15 +187,27 @@ async def create_plugin_version(
     plugin: PluginOrm = Depends(deps.plugin),
 ):
     '''Publish a new version of the plugin to the registry.'''
+    logger.info(
+        'Creating a new plugin version for plugin %s (%s)',
+        plugin.name, version
+    )
     version_orm = PluginVersionOrm()
     version_orm.version = version
     version_orm.plugin = plugin
     version_orm.upload_date = datetime.now()
     db.add(version_orm)
     db.commit()
+    logger.info('Plugin version created and committed successfully.')
+
     plugin_path = BASE_PATH / f'{plugin.name}/'
+    logger.info('Saving version to path %s', plugin_path)
     plugin_path.mkdir(parents=True, exist_ok=True)
+    logger.info('Making the directory if it does not exist...')
     with open(plugin_path / f'{version}.tar.gz', 'wb') as fp:
+        logger.info(
+            'Opened file pointer to %s and writing...',
+            str(plugin_path / f'{version}.tar.gz')
+        )
         fp.write(b85decode(data.tarball))
     return JSONResponse({'status': 'ok'}, HTTPStatus.CREATED)
 
