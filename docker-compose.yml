@@ -1,0 +1,29 @@
+version: '3.7'
+
+networks:
+  default:
+    external:
+      name: cli_registry
+
+services:
+  app:
+    image: "sbordeyne/cli:1.0.0"
+    environment:
+      SQL_DATABASE_PATH: "/data/database/app.db"
+      BASE_PATH: "/data/files"
+      PORT: "8000"
+      HOST: "0.0.0.0"
+    volumes:
+      - "./data:/data"
+    ports:
+      - "8000:8000"
+
+  alembic:
+    image: "sbordeyne/cli:1.0.0"
+    environment:
+      BASE_PATH: "/data/files"
+      SQL_DATABASE_PATH: "/data/database/app.db"
+      RUN_MIGRATIONS: "true"
+      ALEMBIC_INI_PATH: "/app/alembic.ini"
+    volumes:
+      - "./data:/data"
