@@ -82,4 +82,4 @@ class PluginVersionModel(BaseModel):
     class Config:
         orm_mode = True
 
-    version: constr(regex="\\d+\\.\\d+\\.\\d+", max_length=20)  # noqa
+    tarball: str

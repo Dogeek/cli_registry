@@ -17,6 +17,8 @@ services:
       - "./data:/data"
     ports:
       - "8000:8000"
+    depends:
+      - "redis"
 
   alembic:
     image: "sbordeyne/cli:1.0.0"

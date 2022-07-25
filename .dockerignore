@@ -1,0 +1,8 @@
+*.db
+tests/*
+scripts/*
+__pycache__
+*.py[codi]
+git_hooks/*
+*.mako
+*.md

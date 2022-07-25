@@ -1,16 +1,17 @@
+from base64 import b85decode
 from datetime import datetime
 from http import HTTPStatus
 import os
 from typing import Optional
 
-from fastapi import FastAPI, Depends, UploadFile, Header, HTTPException
+from fastapi import FastAPI, Depends, Header, HTTPException
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
 from cli_registry.config import BASE_PATH
 from cli_registry.models.maintainer import MaintainerOrm, MaintainerModel
 from cli_registry.models.plugin import (
-    PluginOrm, PluginVersionOrm, PluginModel
+    PluginOrm, PluginVersionOrm, PluginModel, PluginVersionModel,
 )
 from cli_registry import dependancies as deps
 
@@ -154,7 +155,7 @@ async def add_maintainer_to_plugin(
     dependencies=[Depends(deps.authentication)]
 )
 async def create_plugin_version(
-    version: str, file: UploadFile,
+    version: str, data: PluginVersionModel,
     db: Session = Depends(deps.db),
     plugin: PluginOrm = Depends(deps.plugin),
 ):
@@ -168,7 +169,7 @@ async def create_plugin_version(
     plugin_path = BASE_PATH / f'{plugin.name}/'
     plugin_path.mkdir(parents=True, exist_ok=True)
     with open(plugin_path / f'{version}.tar.gz', 'wb') as fp:
-        fp.write(file.file.read())
+        fp.write(b85decode(data.tarball))
     return JSONResponse({'status': 'ok'}, HTTPStatus.CREATED)
 
 
@@ -185,7 +186,10 @@ async def delete_plugin(
     return JSONResponse({'status': 'ok'}, HTTPStatus.NO_CONTENT)
 
 
-@app.delete('/v1/plugins/{plugin_name}/{version}', dependencies=[Depends(deps.authentication)])
+@app.delete(
+    '/v1/plugins/{plugin_name}/versions/{version}',
+    dependencies=[Depends(deps.authentication)]
+)
 async def delete_plugin_version(
     plugin_version: PluginVersionOrm = Depends(deps.plugin_version),
     db: Session = Depends(deps.db),
